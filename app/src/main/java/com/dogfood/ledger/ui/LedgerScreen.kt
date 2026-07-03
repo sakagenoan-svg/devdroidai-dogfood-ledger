@@ -44,6 +44,11 @@ data class CategorySummary(
     val ratio: Float get() = if (budget.minor == 0L) 0f else (spent.minor.toFloat() / budget.minor.toFloat())
 }
 
+data class MonthlySummary(
+    val income: Money,
+    val expense: Money,
+)
+
 class LedgerViewModel(private val dao: LedgerDao) : ViewModel() {
 
     private val firstOfMonth: Long
@@ -63,6 +68,18 @@ class LedgerViewModel(private val dao: LedgerDao) : ViewModel() {
                 }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val monthlySummary: StateFlow<MonthlySummary> =
+        combine(
+            dao.monthlyIncome(firstOfMonth),
+            dao.monthlyExpense(firstOfMonth),
+        ) { incomeMinor, expenseMinor ->
+            MonthlySummary(
+                income = Money(incomeMinor),
+                expense = Money(-expenseMinor),
+            )
+        }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MonthlySummary(Money.ZERO, Money.ZERO))
 
     private fun summaryFlow(category: CategoryEntity) =
         dao.spentSince(category.id, firstOfMonth).map { spentMinor ->
