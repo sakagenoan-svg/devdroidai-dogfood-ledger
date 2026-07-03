@@ -46,6 +46,18 @@ interface LedgerDao {
     )
     fun spentSince(categoryId: String, fromDay: Long): Flow<Long>
 
+    @Query(
+        "SELECT COALESCE(SUM(amountMinor), 0) FROM transactions " +
+            "WHERE epochDay >= :fromDay AND amountMinor >= 0",
+    )
+    fun monthlyIncome(fromDay: Long): Flow<Long>
+
+    @Query(
+        "SELECT COALESCE(SUM(amountMinor), 0) FROM transactions " +
+            "WHERE epochDay >= :fromDay AND amountMinor < 0",
+    )
+    fun monthlyExpense(fromDay: Long): Flow<Long>
+
     @Upsert
     suspend fun upsertCategory(category: CategoryEntity)
 
